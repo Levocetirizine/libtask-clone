@@ -60,6 +60,7 @@ typedef unsigned long long uvlong;
 typedef long long vlong;
 
 #define print task_print
+#define log task_log
 #define fprint task_fprint
 #define snprint task_snprint
 #define seprint task_seprint
@@ -70,6 +71,7 @@ typedef long long vlong;
 #define strecpy task_strecpy
 
 int print(char*, ...);
+int log(char*, ...);
 int fprint(int, char*, ...);
 char *snprint(char*, uint, char*, ...);
 char *seprint(char*, char*, char*, ...);

@@ -241,6 +241,23 @@ print(char *fmt, ...)
 	return n;
 }
 
+int
+log(char *fmt, ...)
+{
+	int n;
+	va_list arg;
+
+	print("[LOG] ");
+
+	va_start(arg, fmt);
+	n = vprint(fmt, arg);
+	va_end(arg);
+
+	print("\n");
+
+	return n;	
+}
+
 char*
 strecpy(char *dst, char *edst, char *src)
 {

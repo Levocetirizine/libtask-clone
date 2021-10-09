@@ -133,14 +133,19 @@ taskalloc(void (*fn)(void*), void *arg, uint stack)
 	return t;
 }
 
+/**
+ * Create task (but do not execute)
+ * 
+ */ 
 int
 taskcreate(void (*fn)(void*), void *arg, uint stack)
 {
 	int id;
 	Task *t;
 
-	t = taskalloc(fn, arg, stack);
+	t = taskalloc(fn, arg, stack); // size: sizeof(Task) + stack
 	taskcount++;
+	log("Task Count: %d", taskcount);
 	id = t->id;
 	if(nalltask%64 == 0){
 		alltask = realloc(alltask, (nalltask+64)*sizeof(alltask[0]));
@@ -175,7 +180,7 @@ void
 taskready(Task *t)
 {
 	t->ready = 1;
-	addtask(&taskrunqueue, t);
+	addtask(&taskrunqueue, t); 
 }
 
 int
@@ -226,27 +231,32 @@ taskscheduler(void)
 	Task *t;
 
 	taskdebug("scheduler enter");
+	log("scheduler enter");
 	for(;;){
-		if(taskcount == 0)
+		if(taskcount == 0) {
+			log("Exit program");
 			exit(taskexitval);
+		}
+		log("%d running tasks", taskcount);
 		t = taskrunqueue.head;
 		if(t == nil){
 			fprint(2, "no runnable tasks! %d tasks stalled\n", taskcount);
 			exit(1);
 		}
-		deltask(&taskrunqueue, t);
+		deltask(&taskrunqueue, t); // get one task from head
 		t->ready = 0;
 		taskrunning = t;
 		tasknswitch++;
 		taskdebug("run %d (%s)", t->id, t->name);
-		contextswitch(&taskschedcontext, &t->context);
+		contextswitch(&taskschedcontext, &t->context); // goto t->ctx
+		log("back in scheduler");
 //print("back in scheduler\n");
 		taskrunning = nil;
 		if(t->exiting){
 			if(!t->system)
 				taskcount--;
 			i = t->alltaskslot;
-			alltask[i] = alltask[--nalltask];
+			alltask[i] = alltask[--nalltask]; // switch current slot with last one
 			alltask[i]->alltaskslot = i;
 			free(t);
 		}
@@ -354,6 +364,8 @@ main(int argc, char **argv)
 {
 	struct sigaction sa, osa;
 
+	print("\n [PROGRAM START] \n");
+
 	memset(&sa, 0, sizeof sa);
 	sa.sa_handler = taskinfo;
 	sa.sa_flags = SA_RESTART;
@@ -369,8 +381,9 @@ main(int argc, char **argv)
 
 	if(mainstacksize == 0)
 		mainstacksize = 256*1024;
+	log("Start main task");
 	taskcreate(taskmainstart, nil, mainstacksize);
-	taskscheduler();
+	taskscheduler(); // taskscheduler shall never return
 	fprint(2, "taskscheduler returned in main!\n");
 	abort();
 	return 0;
